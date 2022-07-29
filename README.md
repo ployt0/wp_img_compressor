@@ -82,28 +82,19 @@ you will get an error if you run it without a valid config, ie against other
 than the WordPress server provided in the Vagrant, you still get the gallery
 view and tmp directory containing the generated images.
 
-## Problem
+## Out-of-sync image formats
 
 I uploaded some images  as jpeg about a year ago. Now I see their thumbnails
 are blank in the media library. This is because I replace them with PNGs. The
 pages that use them know this and work, but WordPress is confused. I updated
-the SQL but nothing much changed.
+the SQL, the only jpegs were there in error, but nothing much changed:
 
 ```shell
-mysql> select id, post_mime_type, guid from wp_posts where post_mime_type = "image/jpeg" limit 25;
-+----+----------------+--------------------------------------------------------------------+
-| id | post_mime_type | guid                                                               |
-+----+----------------+--------------------------------------------------------------------+
-| 26 | image/jpeg     | <hostname> /wp-content/uploads/2021/08/credential-use.png          |
-| 27 | image/jpeg     | <hostname> /wp-content/uploads/2021/08/how-it-looked-installed.png |
-| 28 | image/jpeg     | <hostname> /wp-content/uploads/2021/08/menu-for-these-certs.png    |
-+----+----------------+--------------------------------------------------------------------+
-3 rows in set (0.00 sec)
-
 mysql> update wp_posts set post_mime_type = "image/png" where post_mime_type = "image/jpeg";
 ```
 
-I'll be find-replacing next time I get an SQL dump to work with.
+I took an SQL dump and found all occurrences of the files in error, with the hyphen suffixed.
+These were in the `wp_postmeta` table. I simply pasted .png over .jpg. Done.
 
 
 ## TODO
