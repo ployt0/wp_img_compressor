@@ -102,6 +102,11 @@ jobs:
         docker exec -i mariadb mysql -uroot -pmypass < wpdbsetup.sql
         docker exec -i mariadb mysql -uroot -pmypass wordpress < full_db_220727_0953.sql
 
+    - name: Acquire wp_api
+      run: |
+        git clone https://github.com/ployt0/wp_app_api.git
+        cp -r wp_app_api/wp_api img_compressor/
+
     - name: Test with pytest for coverage
       run: |
         cd tests

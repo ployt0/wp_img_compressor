@@ -77,7 +77,7 @@ SHELL
   config.vm.provision "acquire wp_api", type: "shell", privileged: false, inline: <<-SHELL
 echo "colo ron" > ~/.vimrc
 git clone https://github.com/ployt0/wp_app_api.git
-cp -r wp_app_api/wp_api /vagrant/img_compressor
+cp -r wp_app_api/wp_api /vagrant/img_compressor/
 SHELL
 
   config.vm.provision "Check coverage", type: "shell", privileged: false, inline: <<-SHELL

@@ -1,6 +1,6 @@
 # WP Automations
 
-![python-app workflow](https://github.com/ployt0/wp_automations/actions/workflows/python-app.yml/badge.svg)
+![python-app workflow](https://github.com/ployt0/wp_img_compressor/actions/workflows/python-app.yml/badge.svg)
 
 I wrote about the manual commands to do something about
 [WordPress's wasted storage when resizing uploaded images](
