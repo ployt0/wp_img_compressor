@@ -1,0 +1,5 @@
+pytest
+coverage
+Jinja2
+requests
+paramiko
