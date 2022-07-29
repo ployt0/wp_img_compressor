@@ -71,23 +71,24 @@ Should credentials and host not be correct, the script will fail and leave
 the tmp directory, pictured in the gallery. This should be deleted, but any
 contents can be salvaged manually, beforehand.
 
-## Real world usage
+## Dev machine usage
 
 ```shell
-:~/PycharmProjects/wp_img_compressor$ PYTHONPATH=.. python3 img_compressor/compressor.py tests/testing-how-it-looked-installed.png
+:~/PycharmProjects/wp_img_compressor/img_compressor$ ./compressor.py some_img_path.png
 ```
 
 The default location of the config.json is the current working directory. While
 you will get an error if you run it without a valid config, ie against other
 than the WordPress server provided in the Vagrant, you still get the gallery
-view and tmp directory containing the generated images.
+view. The tmp directory containing the generated images is cleaned up for you
+except for the folder you chose.
 
 ## Out-of-sync image formats
 
 I uploaded some images  as jpeg about a year ago. Now I see their thumbnails
-are blank in the media library. This is because I replace them with PNGs. The
-pages that use them know this and work, but WordPress is confused. I updated
-the SQL, the only jpegs were there in error, but nothing much changed:
+are blank in the media library. This is because I brutishly replaced them with
+PNGs. The pages that use them know this and work, but WordPress is confused.
+I updated the SQL, the only jpegs were there in error, but nothing much changed:
 
 ```shell
 mysql> update wp_posts set post_mime_type = "image/png" where post_mime_type = "image/jpeg";

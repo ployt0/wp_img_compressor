@@ -41,6 +41,7 @@ import subprocess
 from typing import List, Tuple, Any, Dict
 from decimal import Decimal, ROUND_HALF_UP
 
+import requests.exceptions
 from jinja2 import Template
 
 # print(sys.path)
@@ -483,8 +484,23 @@ def process_outputs(
         w, h, img_processor: ImgConvertor, widths_and_heights, conf_file: str):
     img_processor.present_gallery(w, h, widths_and_heights)
     chosen_generated_dir = img_processor.select_one()
-    img_processor.upload(chosen_generated_dir, conf_file)
-    shutil.rmtree(img_processor.subdir_root)
+    try:
+        img_processor.upload(chosen_generated_dir, conf_file)
+    except requests.exceptions.ConnectionError as rex_conn:
+        delete_other_dirs(chosen_generated_dir, img_processor)
+        raise ConnectionError("Uploading failed. Requests says: \"{}\"".format(rex_conn))
+    except FileNotFoundError as fnferr:
+        # Likely the user didn't bother with config.json
+        delete_other_dirs(chosen_generated_dir, img_processor)
+        raise
+    else:
+        shutil.rmtree(img_processor.subdir_root)
+
+
+def delete_other_dirs(chosen_generated_dir, img_processor):
+    for a_dir in img_processor.all_dirs:
+        if a_dir[1] != chosen_generated_dir:
+            shutil.rmtree(a_dir[1])
 
 
 def process_args(args_list: List[str]):
