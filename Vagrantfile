@@ -81,6 +81,7 @@ cp -r wp_app_api/wp_api /vagrant/img_compressor/
 SHELL
 
   config.vm.provision "Check coverage", type: "shell", privileged: false, inline: <<-SHELL
+pip install -r /vagrant/requirements.txt
 cd /vagrant/tests
 PYTHONPATH=../img_compressor /home/vagrant/.local/bin/coverage run --source="../img_compressor" --omit="../img_compressor/wp_api/*" -m pytest
 PYTHONPATH=../img_compressor /home/vagrant/.local/bin/coverage report -m --fail-under=90
