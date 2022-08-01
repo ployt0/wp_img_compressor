@@ -118,8 +118,15 @@ def get_widths_and_heights(
     if src_w > MED_LARGE_W:
         w_hs.append(fix_width(src_h, src_w, MED_LARGE_W))
     thmb = get_thumbnail(src_w, src_h, thumb_w, thumb_h)
-    add_udef_size(w_hs, src_w, src_h, med_w, med_h)
-    add_udef_size(w_hs, src_w, src_h, large_w, large_h)
+    add_scaled_size_bounded_by(w_hs, src_w, src_h, med_w, med_h)
+    add_scaled_size_bounded_by(w_hs, src_w, src_h, large_w, large_h)
+    # WordPress v.5.3 introduced three new large resized image sizes
+    # https://wpo.plus/wordpress/large-image-sizes/
+    # Currently, these are "named": "1536x1536" and "2048x2048" in the SQL.
+    # I haven't seen a 2560 yet!
+    add_scaled_size_bounded_by(w_hs, src_w, src_h, 1536, 1536)
+    add_scaled_size_bounded_by(w_hs, src_w, src_h, 2048, 2048)
+    add_scaled_size_bounded_by(w_hs, src_w, src_h, 2560, 2560)
     return sorted(w_hs), thmb
 
 
@@ -136,7 +143,7 @@ def get_thumbnail(src_w: int, src_h: int, thumb_w: int, thumb_h: int):
         return thumb_w, thumb_h
 
 
-def add_udef_size(w_hs: ResolutionsList, src_w: int, src_h: int, max_w: int, max_h: int):
+def add_scaled_size_bounded_by(w_hs: ResolutionsList, src_w: int, src_h: int, max_w: int, max_h: int):
     if src_w > max_w or src_h > max_h:
         w_over = float(src_w) / max_w
         h_over = float(src_h) / max_h
