@@ -126,7 +126,8 @@ def get_widths_and_heights(
     # I haven't seen a 2560 yet!
     add_scaled_size_bounded_by(w_hs, src_w, src_h, 1536, 1536)
     add_scaled_size_bounded_by(w_hs, src_w, src_h, 2048, 2048)
-    add_scaled_size_bounded_by(w_hs, src_w, src_h, 2560, 2560)
+    # 2560x2560 wasn't being added, to a 4000x3000 original for example.
+    # add_scaled_size_bounded_by(w_hs, src_w, src_h, 2560, 2560)
     return sorted(w_hs), thmb
 
 

@@ -46,8 +46,8 @@ docker run -p 127.0.0.1:8080:80 -p 127.0.0.1:8066:22 --name mywp -d wordpress:6.
 docker exec -i mywp bash < /home/vagrant/wp_provisioning.sh
 ```
 
-**IMPORTANT:** after any `docker stop` or other halting activity,
-`/etc/init.d/ssh start` will be required again.
+`docker stop` or other halting activity, had a tendency to stop
+ssh in the wordpress image, if so, try `/etc/init.d/ssh start`.
 
 ### An SSH target within our VM
 

@@ -74,14 +74,17 @@ docker exec -i mariadb mysql -uroot -pmypass < /home/vagrant/wpdbsetup.sql
 docker exec -i mariadb mysql -uroot -pmypass wordpress < /home/vagrant/current_db.sql
 SHELL
 
-  config.vm.provision "acquire wp_api", type: "shell", privileged: false, inline: <<-SHELL
+  config.vm.provision "configure vagrant shell", type: "shell", privileged: false, inline: <<-SHELL
 echo "colo ron" > ~/.vimrc
+echo "docker exec -ti mywp bash -c '/etc/init.d/ssh status || /etc/init.d/ssh start'" >> ~/.profile
+SHELL
+
+  config.vm.provision "acquire wp_api", type: "shell", privileged: false, inline: <<-SHELL
 git clone https://github.com/ployt0/wp_app_api.git
 cp -r wp_app_api/wp_api /vagrant/img_compressor/
 SHELL
 
   config.vm.provision "Check coverage", type: "shell", privileged: false, inline: <<-SHELL
-# Remember to `docker exec -ti mywp /etc/init.d/ssh start` if VM has restarted.
 pip install -r /vagrant/requirements.txt
 cd /vagrant/tests
 PYTHONPATH=../img_compressor /home/vagrant/.local/bin/coverage run --source="../img_compressor" --omit="../img_compressor/wp_api/*" -m pytest

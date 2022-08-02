@@ -7,7 +7,7 @@ I wrote about the manual commands to do something about
 https://silverbullets.co.uk/wordpress/wordpress-image-resizing-png-jpg-and-webp/).
 Typing them was time-consuming and a potential barrier to self-hosting images.
 While my shell's history was full of them (or more likely my PC full of
-terminals left open to do this day after day) I was reasonable safe from error.
+terminals left open to do this day after day) I was reasonably safe from error.
 
 I wrote that post 6 months ago and had to re-read it before going ahead
 with writing more posts. What better way to return to productivity than that

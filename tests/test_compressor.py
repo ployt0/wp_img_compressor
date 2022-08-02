@@ -237,6 +237,31 @@ def test_get_widths_and_heights_202207():
     assert widths_and_heights == []
 
 
+def test_get_widths_and_heights_v5_3():
+    # Edge cases I hadn't previously explored.
+    w, h = 2560, 1440
+    widths_and_heights = combined_widths_and_heights(w, h)
+    assert widths_and_heights == [
+        (150,150), (300,169), (768,432), (1024,576), (1536,864), (2048,1152)
+    ]
+    w, h = 4000, 3000
+    # Thought (2560,1920) was used but apparently not:
+    '''
+vagranttestssi_testswhite_300x400.png
+vagranttestssi_testswhite_4000x3000-1024x768.png
+vagranttestssi_testswhite_4000x3000-150x150.png
+vagranttestssi_testswhite_4000x3000-1536x1152.png
+vagranttestssi_testswhite_4000x3000-2048x1536.png
+vagranttestssi_testswhite_4000x3000-300x225.png
+vagranttestssi_testswhite_4000x3000-768x576.png
+vagranttestssi_testswhite_4000x3000.png
+    '''
+    widths_and_heights = combined_widths_and_heights(w, h)
+    assert widths_and_heights == [
+        (150,150), (300,225), (768,576), (1024,768), (1536,1152), (2048,1536)
+    ]
+
+
 def test_ResolutionsList_round_halves_up():
     assert ResolutionsList.round(0.5) == 1
     assert ResolutionsList.round(1.5) == 2

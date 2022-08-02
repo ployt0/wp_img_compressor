@@ -16,15 +16,17 @@ from wp_api.api_app import WP_API
 
 
 @pytest.mark.parametrize("source_size,expected_dims", [
-    ("100x100", []),
-    ("150x150", ["150x150"]),
-    ("200x300", ["150x150"]),
-    ("200x1024", ["59x300", "150x150"]),
-    ("300x200", ["150x150"]),
-    ("300x400", ["150x150", "225x300"]),
-    ("400x300", ["150x150", "300x225"]),
-    ("768x100", ["150x100", "300x39"]),
-    ("1024x200", ["150x150", "300x59", "768x150"]),
+    ((100,100), []),
+    ((150,150), [(150,150),]),
+    ((200,300), [(150,150),]),
+    ((200,1024), [(59,300), (150,150),]),
+    ((300,200), [(150,150),]),
+    ((300,400), [(150,150), (225,300),]),
+    ((400,300), [(150,150), (300,225),]),
+    ((768,100), [(150,100), (300,39),]),
+    ((1024,200), [(150,150), (300,59), (768,150),]),
+    ((2560,1440), [(150,150), (300,169), (768,432), (1024,576), (1536,864), (2048,1152),]),
+    ((4000,3000), [(150,150), (300,225), (768,576), (1024,768), (1536,1152), (2048,1536),]),
 ])
 def test_image_resizing(source_size, expected_dims):
     """
@@ -34,13 +36,13 @@ def test_image_resizing(source_size, expected_dims):
     """
     wp_api = WP_API()
     this_dir = Path(__file__).parent.resolve()
-    src_file = os.path.join(this_dir, "white_{}.png".format(source_size))
+    src_file = os.path.join(this_dir, "white_{}x{}.png".format(*source_size))
     response = wp_api.upload_media(src_file, src_file)
     assert response.ok
     if expected_dims:
         # Only if we generate a thumbnail are any resize results returned.
         expected_dims.append(source_size)
-    suffices = sorted(["{}x{}".format(v["width"], v["height"])
+    suffices = sorted([(v["width"], v["height"])
                 for v in response.json()["media_details"]["sizes"].values()])
     assert suffices == sorted(expected_dims)
 
