@@ -6,30 +6,12 @@ to ImageMagick, but not only does that require ImageMagick, it also
 requires ImageMagick-devel, is yet another dependency and obfuscates
 the command lines used to prototype/learn the operations performed.
 
-To offer the use a choice/appraisal of the compression mechanisms we might
+To offer the user a choice/appraisal of the compression mechanisms we
 make an html gallery, and pause waiting for the user to approve one so we
 can delete the rest.
 
-Or we could use install pillow (about 12MB) or matplotlib together with
-numpy (about 130MB).
-
-The advantage of pillow is that each image is a different window and so it
-is easy to discard outliers. But that is all the interaction the default
-image viewer guarantees. We can at least annotate images if the file name
-isn't specific enough: https://pillow.readthedocs.io/en/stable/handbook/text-anchors.html
-https://web.archive.org/web/20200705080256id_/http://effbot.org/imagingbook/introduction.htm#postscript-printing
-The disadvantage of PIL is that, standalone, it writes a temporary image to
-disk to share with the viewer application. This is the behaviour of `show`
-which it describes as for debugging purposes https://pillow.readthedocs.io/en/stable/handbook/overview.html#image-display
-Not only is that wasteful of writes, but it casts doubt on the accuracy of
-the presentation we may well be pixel peeping.
-
-The preferred way of displaying images in PIL is with tkinter. Which is a
-whole GUI frontend in itself and I don't think it plays well with virtual
-environments. `pip install tk` appears to succeed but the venv is only 1MB
-bigger and I can't do anything (eg `tk.Label(...)`) with it. Frontends are
-heavier.
-
+Alternative gallery libraries include include pillow (about 12MB) or
+matplotlib together with numpy (about 130MB).
 """
 import argparse
 import json
@@ -39,7 +21,6 @@ import sys
 from pathlib import Path
 import subprocess
 from typing import List, Tuple, Any, Dict
-from decimal import Decimal, ROUND_HALF_UP
 
 import requests.exceptions
 from jinja2 import Template
@@ -48,6 +29,7 @@ from jinja2 import Template
 
 from paramiko_client import get_client, execute_remotely, filter_dict_for_creds
 from wp_api.api_app import WP_API
+from scaler import DimsList, ImgScaler
 
 
 class CompressorException(Exception):
@@ -70,96 +52,6 @@ def get_file_size(file_name: str):
 def get_img_wxh(file_name: str) -> List[int]:
     result_text = run_shell_cmd(['identify', '-ping', '-format', '"%wx%h"', file_name])
     return list(map(int, result_text.strip("\"").split("x")))
-
-
-class ResolutionsList(list):
-    @staticmethod
-    def round(a) -> int:
-        """Rounding, as performed in WordPress, the "traditional" way."""
-        return int(Decimal(a).quantize(0, ROUND_HALF_UP))
-
-    def append(self, resolution: Tuple):
-        rounded_resolution = (
-            ResolutionsList.round(resolution[0]),
-            ResolutionsList.round(resolution[1]))
-        list.append(self, rounded_resolution)
-
-
-DimsList = List[Tuple[int, int]]
-
-
-def get_widths_and_heights(
-        src_w: int, src_h: int,
-        med_w: int=300, med_h: int=300,
-        large_w: int=1024, large_h: int=1024,
-        thumb_w: int=150, thumb_h: int=150) -> \
-        Tuple[DimsList, Tuple[int, int]]:
-    """
-    WordPress media settings contain a lot of options for various sizes.
-    These apply only at upload time (if at all), pre-existing images
-    are not affected by changes to those parameters. There are defaults
-    because I don't believe the vast majority of WordPress users appreciate,
-    notice, or alter these.
-
-    :param src_w: source width
-    :param src_h: source height
-    :param med_w: medium width
-    :param med_h: medium height
-    :param large_w: large width
-    :param large_h: large height
-    :param thumb_w: thumbnail width
-    :param thumb_h: thumbnail height
-    :return: 2-tuple of generated sizes and a separate thumbnail size, if
-        applicable, because that is zoom cropped unlike the rest.
-    """
-    MED_LARGE_W = 768
-    w_hs = ResolutionsList()
-    # 768 isn't optional!
-    if src_w > MED_LARGE_W:
-        w_hs.append(fix_width(src_h, src_w, MED_LARGE_W))
-    thmb = get_thumbnail(src_w, src_h, thumb_w, thumb_h)
-    add_scaled_size_bounded_by(w_hs, src_w, src_h, med_w, med_h)
-    add_scaled_size_bounded_by(w_hs, src_w, src_h, large_w, large_h)
-    # WordPress v.5.3 introduced three new large resized image sizes
-    # https://wpo.plus/wordpress/large-image-sizes/
-    # Currently, these are "named": "1536x1536" and "2048x2048" in the SQL.
-    # I haven't seen a 2560 yet!
-    add_scaled_size_bounded_by(w_hs, src_w, src_h, 1536, 1536)
-    add_scaled_size_bounded_by(w_hs, src_w, src_h, 2048, 2048)
-    # 2560x2560 wasn't being added, to a 4000x3000 original for example.
-    # add_scaled_size_bounded_by(w_hs, src_w, src_h, 2560, 2560)
-    return sorted(w_hs), thmb
-
-
-def get_thumbnail(src_w: int, src_h: int, thumb_w: int, thumb_h: int):
-    if src_w >= thumb_w or src_h >= thumb_h:
-        # This, thumbnail, is the only cropping transform (by default).
-        # The other size all scale instead.
-        if src_w < thumb_w and src_h < thumb_h:
-            return
-        if src_w < thumb_w:
-            thumb_w = src_w
-        if src_h < thumb_h:
-            thumb_h = src_h
-        return thumb_w, thumb_h
-
-
-def add_scaled_size_bounded_by(w_hs: ResolutionsList, src_w: int, src_h: int, max_w: int, max_h: int):
-    if src_w > max_w or src_h > max_h:
-        w_over = float(src_w) / max_w
-        h_over = float(src_h) / max_h
-        constraint = max(w_over, h_over)
-        w_hs.append((src_w / constraint, src_h / constraint))
-
-
-def fix_width(src_h: int, src_w: int, fixed_width: int) -> Tuple[int, int]:
-    return fixed_width,\
-           ResolutionsList.round(float(src_h) * fixed_width / src_w)
-
-
-def fix_height(src_h: int, src_w: int, fixed_height: int) -> Tuple[int, int]:
-    return ResolutionsList.round(float(src_w) * fixed_height / src_h),\
-           fixed_height
 
 
 def split_cmd_not_args(f_str_vars: Dict[str, Any], cmd: str) -> List[str]:
@@ -432,7 +324,8 @@ def resize(
         raise RuntimeError("Unknown image file type: \"{}\"".format(img_name))
 
     w, h = get_img_wxh(img_name)
-    widths_and_heights, _ = get_widths_and_heights(w, h)
+    scaler = ImgScaler(w, h)
+    widths_and_heights, _ = scaler.get_widths_and_heights()
     subdir_root = "tmp/"
     img_processor = ImgConvertor(img_name, widths_and_heights, subdir_root)
     if not skip_png:
