@@ -13,7 +13,7 @@ I wrote that post 6 months ago and had to re-read it before going ahead
 with writing more posts. What better way to return to productivity than that
 script I'd been hankering after.
 
-I'm also providing accompanying an accompanying "library" to interact with
+I'm also providing an accompanying "library" to interact with
 the API from python, `wp_api`, using my newly learned "application passwords".
 
 I decided to split this code into its own repository so it can be public

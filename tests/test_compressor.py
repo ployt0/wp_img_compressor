@@ -3,7 +3,7 @@ from unittest.mock import patch, sentinel, Mock, mock_open, call
 import pytest
 
 from compressor import get_widths_and_heights, ResolutionsList, run_shell_cmd,\
-    get_file_size, get_img_wxh, resize, process_args, get_name_decor
+    get_file_size, get_img_wxh, resize, process_args, get_name_decor, process_outputs
 
 
 def test_parse_args_for_monitoring_help():
@@ -51,6 +51,61 @@ def test_parse_args_config(mock_resize):
         False,
         False
     )
+
+
+@patch("compressor.ImgConvertor", autospec=True)
+@patch("compressor.os.path.isfile", autospec=True, return_value=True)
+@patch("compressor.process_outputs", autospec=True)
+@patch("compressor.get_img_wxh", return_value=[640, 480])
+@patch("compressor.get_widths_and_heights", return_value=(sentinel.widths_and_heights, sentinel.thumbnail))
+def test_resize(mock_get_all_whs, mock_get_1wh, mock_process_outputs,
+                mock_isfile, mock_img_conv):
+    img_name = "this is a file path and name.jpg"
+    resize(img_name, "config.json", False, False, False)
+    mock_process_outputs.assert_called_once_with(
+        640, 480, mock_img_conv.return_value, sentinel.widths_and_heights, "config.json"
+    )
+    mock_get_1wh.assert_called_once_with(img_name)
+    mock_get_all_whs.assert_called_once_with(640, 480)
+    mock_isfile.assert_called_once_with(img_name)
+    mock_img_conv.assert_called_once_with(img_name, sentinel.widths_and_heights, "tmp/")
+
+
+@patch("compressor.ImgConvertor", autospec=True)
+@patch("compressor.os.path.isfile", autospec=True, return_value=True)
+@patch("compressor.process_outputs", autospec=True)
+@patch("compressor.get_img_wxh", return_value=[640, 480])
+@patch("compressor.get_widths_and_heights", return_value=(sentinel.widths_and_heights, sentinel.thumbnail))
+def test_resize_fullsize_only(
+        mock_get_all_whs, mock_get_1wh, mock_process_outputs, mock_isfile,
+        mock_img_conv):
+    img_name = "this is a file path and name.jpg"
+    resize(img_name, "config.json", False, False, False, True)
+    mock_process_outputs.assert_called_once_with(
+        640, 480, mock_img_conv.return_value, sentinel.widths_and_heights, "config.json"
+    )
+    mock_get_1wh.assert_called_once_with(img_name)
+    mock_get_all_whs.assert_called_once_with(640, 480)
+    mock_isfile.assert_called_once_with(img_name)
+    mock_img_conv.assert_called_once_with(img_name, sentinel.widths_and_heights, "tmp/")
+
+
+@patch("compressor.os.path.isfile", autospec=True, return_value=False)
+@patch("compressor.Path", autospec=True)
+def test_resize_missing_file(mock_path, mock_isfile):
+    img_name = "this is a file path and name.jpg"
+    with pytest.raises(FileNotFoundError) as fnfe:
+        resize(img_name)
+    mock_path.assert_called_once_with(img_name)
+    mock_isfile.assert_called_once_with(img_name)
+
+
+@patch("compressor.os.path.isfile", autospec=True, return_value=True)
+def test_resize_unknown_file_ext(mock_isfile):
+    img_name = "this is a file path and name.wookie"
+    with pytest.raises(RuntimeError) as fnfe:
+        resize(img_name)
+    mock_isfile.assert_called_once_with(img_name)
 
 
 def test_parse_args_for_help():
@@ -247,14 +302,14 @@ def test_get_widths_and_heights_v5_3():
     w, h = 4000, 3000
     # Thought (2560,1920) was used but apparently not:
     '''
-vagranttestssi_testswhite_300x400.png
-vagranttestssi_testswhite_4000x3000-1024x768.png
-vagranttestssi_testswhite_4000x3000-150x150.png
-vagranttestssi_testswhite_4000x3000-1536x1152.png
-vagranttestssi_testswhite_4000x3000-2048x1536.png
-vagranttestssi_testswhite_4000x3000-300x225.png
-vagranttestssi_testswhite_4000x3000-768x576.png
-vagranttestssi_testswhite_4000x3000.png
+testswhite_300x400.png
+testswhite_4000x3000-1024x768.png
+testswhite_4000x3000-150x150.png
+testswhite_4000x3000-1536x1152.png
+testswhite_4000x3000-2048x1536.png
+testswhite_4000x3000-300x225.png
+testswhite_4000x3000-768x576.png
+testswhite_4000x3000.png
     '''
     widths_and_heights = combined_widths_and_heights(w, h)
     assert widths_and_heights == [

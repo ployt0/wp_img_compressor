@@ -67,7 +67,7 @@ def get_file_size(file_name: str):
     return result_text.split()[0]
 
 
-def get_img_wxh(file_name: str):
+def get_img_wxh(file_name: str) -> List[int]:
     result_text = run_shell_cmd(['identify', '-ping', '-format', '"%wx%h"', file_name])
     return list(map(int, result_text.strip("\"").split("x")))
 
