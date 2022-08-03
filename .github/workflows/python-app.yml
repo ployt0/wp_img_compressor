@@ -110,7 +110,7 @@ jobs:
     - name: Test with pytest for coverage
       run: |
         cd tests
-        PYTHONPATH=../img_compressor coverage run --source="../img_compressor,../wp_api" -m pytest
+        PYTHONPATH=../img_compressor coverage run --source="../img_compressor" -m pytest
 
     - name: Test coverage
       run: |
