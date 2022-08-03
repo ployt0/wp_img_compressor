@@ -1,9 +1,9 @@
 from unittest.mock import patch, sentinel, Mock, mock_open, call
 
 import pytest
+import requests
 
-from compressor import run_shell_cmd, get_file_size, get_img_wxh, resize,\
-    process_args, get_name_decor, process_outputs
+from compressor import resize, process_args, process_outputs, process_outputs
 
 
 def test_parse_args_for_monitoring_help():
@@ -56,7 +56,7 @@ def test_parse_args_config(mock_resize):
 @patch("compressor.ImgConvertor", autospec=True)
 @patch("compressor.os.path.isfile", autospec=True, return_value=True)
 @patch("compressor.process_outputs", autospec=True)
-@patch("compressor.get_img_wxh", return_value=[640, 480])
+@patch("compressor.cmn.get_img_wxh", return_value=[640, 480])
 @patch("compressor.ImgScaler", autospec=True)
 def test_resize(mock_scaler, mock_get_1wh, mock_process_outputs,
                 mock_isfile, mock_img_conv):
@@ -76,7 +76,7 @@ def test_resize(mock_scaler, mock_get_1wh, mock_process_outputs,
 @patch("compressor.ImgConvertor", autospec=True)
 @patch("compressor.os.path.isfile", autospec=True, return_value=True)
 @patch("compressor.process_outputs", autospec=True)
-@patch("compressor.get_img_wxh", return_value=[640, 480])
+@patch("compressor.cmn.get_img_wxh", return_value=[640, 480])
 @patch("compressor.ImgScaler", autospec=True)
 def test_resize_fullsize_only(
         mock_scaler, mock_get_1wh, mock_process_outputs, mock_isfile,
@@ -92,6 +92,58 @@ def test_resize_fullsize_only(
     mock_scaler.return_value.get_widths_and_heights.assert_called_once_with()
     mock_isfile.assert_called_once_with(img_name)
     mock_img_conv.assert_called_once_with(img_name, sentinel.widths_and_heights, "tmp/")
+
+
+@patch("compressor.shutil.rmtree", autospec=True)
+@patch("compressor.ImgConvertor", autospec=True)
+def test_process_outputs(mock_img_conv, mock_rmtree):
+    mock_img_conv.return_value.subdir_root = sentinel.subdir_root
+    mock_img_conv.return_value.all_dirs = sentinel.all_dirs
+    process_outputs(20, 42, mock_img_conv.return_value, sentinel.widths_and_heights, sentinel.file_name)
+    mock_img_conv.return_value.present_gallery.assert_called_once_with(20, 42, sentinel.widths_and_heights)
+    mock_img_conv.return_value.select_one.assert_called_once_with()
+    mock_img_conv.return_value.upload.assert_called_once_with(
+        mock_img_conv.return_value.select_one.return_value,
+        sentinel.file_name
+    )
+    mock_rmtree.assert_called_once_with(sentinel.subdir_root)
+    mock_img_conv.return_value.delete_other_dirs.assert_not_called()
+
+
+@patch("compressor.shutil.rmtree", autospec=True)
+@patch("compressor.ImgConvertor", autospec=True)
+def test_process_outputs_bad_upload(mock_img_conv, mock_rmtree):
+    mock_img_conv.return_value.upload.side_effect = requests.exceptions.ConnectionError
+    with pytest.raises(ConnectionError) as connerr:
+        process_outputs(20, 42, mock_img_conv.return_value, sentinel.widths_and_heights, sentinel.file_name)
+    mock_img_conv.return_value.present_gallery.assert_called_once_with(20, 42, sentinel.widths_and_heights)
+    mock_img_conv.return_value.select_one.assert_called_once_with()
+    mock_img_conv.return_value.upload.assert_called_once_with(
+        mock_img_conv.return_value.select_one.return_value,
+        sentinel.file_name
+    )
+    mock_rmtree.assert_not_called()
+    mock_img_conv.return_value.delete_other_dirs.assert_called_once_with(
+        mock_img_conv.return_value.select_one.return_value,
+    )
+
+
+@patch("compressor.shutil.rmtree", autospec=True)
+@patch("compressor.ImgConvertor", autospec=True)
+def test_process_outputs_bad_path(mock_img_conv, mock_rmtree):
+    mock_img_conv.return_value.upload.side_effect = FileNotFoundError
+    with pytest.raises(FileNotFoundError) as connerr:
+        process_outputs(20, 42, mock_img_conv.return_value, sentinel.widths_and_heights, sentinel.file_name)
+    mock_img_conv.return_value.present_gallery.assert_called_once_with(20, 42, sentinel.widths_and_heights)
+    mock_img_conv.return_value.select_one.assert_called_once_with()
+    mock_img_conv.return_value.upload.assert_called_once_with(
+        mock_img_conv.return_value.select_one.return_value,
+        sentinel.file_name
+    )
+    mock_rmtree.assert_not_called()
+    mock_img_conv.return_value.delete_other_dirs.assert_called_once_with(
+        mock_img_conv.return_value.select_one.return_value,
+    )
 
 
 @patch("compressor.os.path.isfile", autospec=True, return_value=False)
@@ -115,25 +167,5 @@ def test_resize_unknown_file_ext(mock_isfile):
 def test_parse_args_for_help():
     with pytest.raises(SystemExit):
         process_args(["-h"])
-
-
-def test_run_shell_cmd():
-    result_text = run_shell_cmd(['stat', '-c' '%s %n', "white_100x100.png"])
-    assert result_text.strip() == '694 white_100x100.png'
-
-
-def test_get_file_size():
-    result_text = get_file_size("white_100x100.png")
-    assert result_text == "694"
-
-
-def test_get_img_wxh():
-    wxh = get_img_wxh("white_100x100.png")
-    assert wxh == [100, 100]
-
-
-def test_get_name_decor():
-    decor = get_name_decor(640, 480, "xzmp")
-    assert decor == "-640x480.xzmp"
 
 

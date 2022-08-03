@@ -19,8 +19,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-import subprocess
-from typing import List, Tuple, Any, Dict
+from typing import List, Tuple
 
 import requests.exceptions
 from jinja2 import Template
@@ -30,50 +29,12 @@ from jinja2 import Template
 from paramiko_client import get_client, execute_remotely, filter_dict_for_creds
 from wp_api.api_app import WP_API
 from scaler import DimsList, ImgScaler
+import common_funcs as cmn
+# from common_funcs import *
 
 
 class CompressorException(Exception):
     pass
-
-
-def run_shell_cmd(cmd: List[str]):
-    result = subprocess.run(cmd, capture_output=True)
-    result_text = None
-    if result.returncode == 0:
-        result_text = result.stdout.decode()
-    return result_text
-
-
-def get_file_size(file_name: str):
-    result_text = run_shell_cmd(['stat', '-c' '%s %n', file_name])
-    return result_text.split()[0]
-
-
-def get_img_wxh(file_name: str) -> List[int]:
-    result_text = run_shell_cmd(['identify', '-ping', '-format', '"%wx%h"', file_name])
-    return list(map(int, result_text.strip("\"").split("x")))
-
-
-def split_cmd_not_args(f_str_vars: Dict[str, Any], cmd: str) -> List[str]:
-    """
-    subprocess.run likes the split string format best.
-    Sure we could separate arguments from the command too.
-
-    :param f_str_vars: dictionary of arguments to the f string.
-    :param cmd: the command including f-string place holders.
-    :return: list of input tokens.
-    """
-    curlied_dict = {"{" + k + "}": str(v) for k,v in f_str_vars.items()}
-    rebuilt_cmd = []
-    for token in cmd.split():
-        for k, v in curlied_dict.items():
-            token = token.replace(k, v)
-        rebuilt_cmd.append(token)
-    return rebuilt_cmd
-
-
-def get_name_decor(w: int, h: int, ext: str):
-    return '-{}x{}.{}'.format(w, h, ext)
 
 
 class ImgConvertor:
@@ -102,7 +63,7 @@ class ImgConvertor:
     def path_to_resized_img(self, w: int, h: int, ext: str):
         return '{}{}{}{}'.format(
             self.subdir_name, os.path.sep, self.stem_name,
-            get_name_decor(w, h, ext))
+            cmn.get_name_decor(w, h, ext))
 
     def path_to_new_img(self, ext: str):
         return '{}{}{}.{}'.format(
@@ -232,7 +193,7 @@ class ImgConvertor:
                 # This should overwrite all the shrunk images WP made, except
                 # the 150x150 thumbnail.
                 src_name = str(Path(self.path_to_resized_img(w, h, suffix)).resolve())
-                base_rmt_name = Path(fq_rmt_path).stem + get_name_decor(w, h, suffix)
+                base_rmt_name = Path(fq_rmt_path).stem + cmn.get_name_decor(w, h, suffix)
                 final_name = "{}/{}".format(rmt_dir, base_rmt_name).replace("//", "/")
                 sftp.put(src_name, "/tmp/stagingtmp/{}".format(base_rmt_name))
                 # Sequence these to avoid the race hazard of chown'ing before
@@ -279,20 +240,25 @@ class ImgConvertor:
             "tmp_img2": os.path.join(self.subdir_name, "tmp2.png"),
             "dest_img": self.path_to_new_img(suffix)
         }
-        split_cmd = split_cmd_not_args(f_str_vars, unscaled_cmd)
-        run_shell_cmd(split_cmd)
+        split_cmd = cmn.split_fstring_not_args(f_str_vars, unscaled_cmd)
+        cmn.run_shell_cmd(split_cmd)
         for w, h in self.widths_and_heights:
             for scaling_cmd in scaling_cmds:
-                split_cmd = split_cmd_not_args({
+                split_cmd = cmn.split_fstring_not_args({
                     "w": w,
                     "h": h,
                     "resized_img": self.path_to_resized_img(w, h, suffix),
                     **f_str_vars
                 }, scaling_cmd)
-                run_shell_cmd(split_cmd)
+                cmn.run_shell_cmd(split_cmd)
         Path(f_str_vars["tmp_img"]).unlink(missing_ok=True)
         Path(f_str_vars["tmp_img2"]).unlink(missing_ok=True)
         self.all_dirs.append((self.count_bytes_in_subdir(), self.subdir_name))
+
+    def delete_other_dirs(self, one_dir):
+        for a_dir in self.all_dirs:
+            if a_dir[1] != one_dir:
+                shutil.rmtree(a_dir[1])
 
 
 def resize(
@@ -323,7 +289,7 @@ def resize(
     if img_name.split(".")[-1] not in ["png", "jpg", "jpeg", "webp"]:
         raise RuntimeError("Unknown image file type: \"{}\"".format(img_name))
 
-    w, h = get_img_wxh(img_name)
+    w, h = cmn.get_img_wxh(img_name)
     scaler = ImgScaler(w, h)
     widths_and_heights, _ = scaler.get_widths_and_heights()
     subdir_root = "tmp/"
@@ -388,20 +354,14 @@ def process_outputs(
     try:
         img_processor.upload(chosen_generated_dir, conf_file)
     except requests.exceptions.ConnectionError as rex_conn:
-        delete_other_dirs(chosen_generated_dir, img_processor)
+        img_processor.delete_other_dirs(chosen_generated_dir)
         raise ConnectionError("Uploading failed. Requests says: \"{}\"".format(rex_conn))
     except FileNotFoundError as fnferr:
         # Likely the user didn't bother with config.json
-        delete_other_dirs(chosen_generated_dir, img_processor)
+        img_processor.delete_other_dirs(chosen_generated_dir)
         raise
     else:
         shutil.rmtree(img_processor.subdir_root)
-
-
-def delete_other_dirs(chosen_generated_dir, img_processor):
-    for a_dir in img_processor.all_dirs:
-        if a_dir[1] != chosen_generated_dir:
-            shutil.rmtree(a_dir[1])
 
 
 def process_args(args_list: List[str]):

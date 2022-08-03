@@ -27,9 +27,9 @@ def test_extract_final_dir_and_suffix():
     img_processor, subdir_root = get_foobar_processor()
     sequestering_subdir = "img_magickhappens/"
     fqdir_name = os.path.join(subdir_root, sequestering_subdir)
-    dir_name, final_suffix = img_processor.extract_final_dir_and_suffix(
+    final_dir, final_suffix = img_processor.extract_final_dir_and_suffix(
         fqdir_name)
-    assert sequestering_subdir == dir_name
+    assert final_dir == sequestering_subdir
     assert final_suffix == "img"
 
 
@@ -57,17 +57,19 @@ def test_select_one_fails_uninitialised():
 
 
 @patch("compressor.Path", autospec=True)
-@patch("compressor.run_shell_cmd", autospec=True)
-@patch("compressor.split_cmd_not_args", autospec=True, return_value=sentinel.cmd_split)
+@patch("compressor.cmn.run_shell_cmd", autospec=True)
+@patch("compressor.cmn.split_fstring_not_args", autospec=True, return_value=sentinel.cmd_split)
 def test_transform_to_dir(mock_split_cmd, mock_run_shell, mock_path):
     img_processor, subdir_root = get_foobar_processor()
+    mock_path.reset_mock()
     img_processor.extract_final_dir_and_suffix = Mock(autospec=True, return_value=("img_magickhappens/", "img"))
     img_processor.path_to_new_img = Mock(return_value=sentinel.dest_img)
     img_processor.path_to_resized_img = Mock(return_value=sentinel.resized)
     img_processor.count_bytes_in_subdir = Mock(return_value=sentinel.dirsize)
     img_processor.widths_and_heights = [(42, 65)]
+    q, suffix, descriptive = 5, "tif", "test_description"
     img_processor.transform_to_dir(
-        5, "tif", "test_description", "do foo bar", ["do nada"])
+        q, suffix, descriptive, "do foo bar", ["do nada"])
     assert img_processor.subdir_name == '/x/y/z/tif_q5_test_description'
     assert img_processor.all_dirs == [(sentinel.dirsize, img_processor.subdir_name)]
     mock_run_shell.assert_has_calls([
@@ -76,6 +78,16 @@ def test_transform_to_dir(mock_split_cmd, mock_run_shell, mock_path):
     ])
     img_processor.count_bytes_in_subdir.assert_called_once_with()
     assert len(mock_split_cmd.mock_calls) == 2
+    mock_path.assert_has_calls([
+        call(img_processor.subdir_name),
+        call().mkdir(parents=True, exist_ok=True),
+        call(os.path.join(img_processor.subdir_name, "tmp.png")),
+        call().unlink(missing_ok=True),
+        call(os.path.join(img_processor.subdir_name, "tmp2.png")),
+        call().unlink(missing_ok=True)
+    ])
+    assert img_processor.subdir_name == os.path.join(
+            img_processor.subdir_root, "{}_q{}_{}".format(suffix, q, descriptive))
 
 
 @patch("compressor.Path", autospec=True)
@@ -134,4 +146,16 @@ def test_replace_generated_sizes_rmt_exec_errs_second(
     mock_get_client.return_value.open_sftp.return_value.put.assert_called_once()
     mock_get_client.return_value.open_sftp.return_value.close.assert_called_once_with()
     mock_get_client.return_value.close.assert_called_once_with()
+
+
+@patch("compressor.shutil.rmtree", autospec=True)
+def test_delete_other_dirs(mock_rmtree):
+    one_dir = "x3"
+    all_dirs = ("x1", "x2", "x3", "x4", "y1", "y2")
+    img_processor, subdir_root = get_foobar_processor()
+    img_processor.all_dirs = [(42, x) for x in all_dirs]
+    img_processor.delete_other_dirs(one_dir)
+    mock_rmtree.assert_has_calls([
+        call(x) for x in all_dirs if x != one_dir
+    ])
 

@@ -2,8 +2,7 @@ from unittest.mock import patch, sentinel, Mock, mock_open, call
 
 import pytest
 
-from compressor import run_shell_cmd, get_file_size, get_img_wxh, resize,\
-    process_args
+from compressor import resize, process_args
 from wp_api.api_app import WP_API
 
 
