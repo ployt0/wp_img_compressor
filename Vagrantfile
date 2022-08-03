@@ -1,4 +1,5 @@
-load "vagrant_const_comms.rb"
+LOCKED_2004_BOX_VERSION = "20211026.0.0"
+LOCKED_JAMMY_VERSION = "20220712.0.0"
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"
