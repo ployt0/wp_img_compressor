@@ -136,8 +136,8 @@ class ImgConvertor:
             ))
         print("Please review the results at file:"
               "//{} and select the set you prefer."
-              .format(str(Path("gallery.html").resolve()),
-                      str(Path("gallery.html").resolve())))
+              .format(Path("gallery.html").resolve(),
+                      Path("gallery.html").resolve()))
 
     def select_one(self) -> str:
         """

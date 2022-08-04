@@ -3,12 +3,7 @@ from unittest.mock import patch, sentinel, Mock, mock_open, call
 import pytest
 import requests
 
-from compressor import resize, process_args, process_outputs, process_outputs
-
-
-def test_parse_args_for_monitoring_help():
-    with pytest.raises(SystemExit):
-        process_args(["-h"])
+from compressor import resize, process_args, process_outputs
 
 
 @patch("compressor.resize", autospec=True)
