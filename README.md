@@ -2,6 +2,16 @@
 
 ![python-app workflow](https://github.com/ployt0/wp_img_compressor/actions/workflows/python-app.yml/badge.svg)
 
+---
+
+Deprecated: This is not being updated. I prefer to automate fully at the backend with this https://github.com/ployt0/wp_ss_img_resizer
+
+Both are relatively simple projects and should provide reference materials.
+
+I'm switching to static hosting.
+
+---
+
 I wrote about the manual commands to do something about
 [WordPress's wasted storage when resizing uploaded images](
 https://silverbullets.co.uk/wordpress/wordpress-image-resizing-png-jpg-and-webp/).
