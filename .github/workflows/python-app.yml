@@ -23,12 +23,12 @@ on:
           - "3.11"
           - "3.10"
           - "3.9"
-        default: "3.10"
+        default: "3.12.0-rc.1"
       wp_version:
         description: Choose WordPress version
-        default: "6.0.1"
+        default: "6.2.2"
       maria_image:
-        description: Choose MariaDB docker tag
+        description: Choose MariaDB docker tag (11.x isn't supported, yet)
         default: "10.8.3-jammy"
   schedule:
     - cron:  '0 0 * * FRI'
@@ -43,8 +43,8 @@ jobs:
 
     - name: Set the variables
       env:
-        DEFAULT_PY_VERSION: '3.10'
-        DEFAULT_WP_VERSION: "6.0.1"
+        DEFAULT_PY_VERSION: '3.12.0-rc.1'
+        DEFAULT_WP_VERSION: "6.2.2"
         DEFAULT_MARIA_IMG: "10.8.3-jammy"
       run: |
         echo "PY_VERS=${{ github.event.inputs.python_version || env.DEFAULT_PY_VERSION }}" >> $GITHUB_ENV
@@ -105,12 +105,12 @@ jobs:
       run: |
         sleeps=0
         while ! docker exec mariadb mysql -uroot -pmypass -e "SELECT 1" >/dev/null 2>&1; do
-            echo sleeping.
-            docker ps  # Read headlines.
             sleeps=$((sleeps + 1))
             if  [[ $sleeps -ge 5 ]]
             then
               docker stats --no-stream
+            else
+              docker ps
             fi
             if [[ $sleeps -eq 12 ]]
             then
