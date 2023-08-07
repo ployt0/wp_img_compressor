@@ -17,16 +17,13 @@ on:
     inputs:
       python_version:
         type: choice
-        description: Choose python version (as long as it's 3.10)
+        description: Choose python version
         options:
           - "3.12.0-rc.1"
           - "3.11"
           - "3.10"
           - "3.9"
-        default: "3.10"
-      wp_version:
-        description: Choose WordPress version
-        default: "6.2.2"
+        default: "3.12.0-rc.1"
       maria_image:
         description: Choose MariaDB docker tag (11.x isn't supported, yet)
         default: "10.8.3-jammy"
@@ -43,13 +40,14 @@ jobs:
 
     - name: Set the variables
       env:
-        DEFAULT_PY_VERSION: '3.10'
-        DEFAULT_WP_VERSION: "6.2.2"
-        DEFAULT_MARIA_IMG: "10.8.3-jammy"
+        DEFAULT_PY_VERSION: '3.12.0-rc.1'
+        DEFAULT_WP_VERSION: "6.0.1"  # This is tied to the SQL dump for this repo.
+        DEFAULT_MARIA_IMG: "10.8.3-jammy"  # 11.0.2 is failing to return, don't change!
       run: |
         echo "PY_VERS=${{ github.event.inputs.python_version || env.DEFAULT_PY_VERSION }}" >> $GITHUB_ENV
         echo "WP_VERS=${{ github.event.inputs.wp_version || env.DEFAULT_WP_VERSION }}" >> $GITHUB_ENV
         echo "MARIADB_IMG=${{ github.event.inputs.maria_image || env.DEFAULT_MARIA_IMG }}" >> $GITHUB_ENV
+        echo $GITHUB_ENV
 
     - name: Set up Python ${{env.PY_VERS}}
       uses: actions/setup-python@v4
