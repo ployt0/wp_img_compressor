@@ -13,6 +13,25 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      python_version:
+        type: choice
+        description: Choose python version
+        options:
+          - "3.12.0-rc.1"
+          - "3.11"
+          - "3.10"
+          - "3.9"
+        default: "3.10"
+      wp_version:
+        description: Choose WordPress version
+        default: "6.0.1"
+      maria_image:
+        description: Choose MariaDB docker tag
+        default: "10.8.3-jammy"
+  schedule:
+    - cron:  '0 0 * * FRI'
 
 jobs:
   build:
@@ -20,11 +39,22 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+
+    - name: Set the variables
+      env:
+        DEFAULT_PY_VERSION: '3.10'
+        DEFAULT_WP_VERSION: "6.0.1"
+        DEFAULT_MARIA_IMG: "10.8.3-jammy"
+      run: |
+        echo "PY_VERS=${{ github.event.inputs.python_version || env.DEFAULT_PY_VERSION }}" >> $GITHUB_ENV
+        echo "WP_VERS=${{ github.event.inputs.wp_version || env.DEFAULT_WP_VERSION }}" >> $GITHUB_ENV
+        echo "MARIADB_IMG=${{ github.event.inputs.maria_image || env.DEFAULT_MARIA_IMG }}" >> $GITHUB_ENV
+
+    - name: Set up Python ${{env.PY_VERS}}
+      uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: ${{env.PY_VERS}}
 
     - name: Install dependencies
       run: |
@@ -49,12 +79,12 @@ jobs:
 
     - name: Spin up DB container
       run: |
-        docker run --name mariadb -e MYSQL_ROOT_PASSWORD=mypass -p 3306:3306 -d --restart unless-stopped mariadb:10.8.3-jammy
+        docker run --name mariadb -e MYSQL_ROOT_PASSWORD=mypass -p 3306:3306 -d --restart unless-stopped mariadb:${{env.MARIADB_IMG}}
 
     - name: Spin up WordPress container
       run: |
         # Query, can we expose on 0? Or localhost only?
-        docker run -p 80:80 -p 443:443 -p 127.0.0.1:8066:22 --name mywp -d --restart unless-stopped wordpress:6.0.1
+        docker run -p 80:80 -p 443:443 -p 127.0.0.1:8066:22 --name mywp -d --restart unless-stopped wordpress:${{env.WP_VERS}}
 
         mariadb_addy=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' mariadb)
 
