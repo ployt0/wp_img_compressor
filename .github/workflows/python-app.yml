@@ -103,10 +103,20 @@ jobs:
 
     - name: Await return of mariadb container
       run: |
+        sleeps=0
         while ! docker exec mariadb mysql -uroot -pmypass -e "SELECT 1" >/dev/null 2>&1; do
             echo sleeping.
             docker ps  # Read headlines.
-            sleep 1
+            sleeps=$((sleeps + 1))
+            if  [[ $sleeps -ge 5 ]]
+            then
+              docker stats --no-stream
+            fi
+            if [[ $sleeps -eq 12 ]]
+            then
+              exit 1
+            fi
+            sleep $sleeps
         done
 
     - name: Use WP's IP for DB user
