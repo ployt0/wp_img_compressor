@@ -23,7 +23,7 @@ on:
           - "3.11"
           - "3.10"
           - "3.9"
-        default: "3.12.0-rc.1"
+        default: "3.11"
       wp_version:
         description: Choose WordPress version
         default: "6.2.2"
@@ -43,7 +43,7 @@ jobs:
 
     - name: Set the variables
       env:
-        DEFAULT_PY_VERSION: '3.12.0-rc.1'
+        DEFAULT_PY_VERSION: '3.11'
         DEFAULT_WP_VERSION: "6.2.2"
         DEFAULT_MARIA_IMG: "10.8.3-jammy"
       run: |
