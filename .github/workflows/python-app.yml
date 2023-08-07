@@ -47,7 +47,7 @@ jobs:
         echo "PY_VERS=${{ github.event.inputs.python_version || env.DEFAULT_PY_VERSION }}" >> $GITHUB_ENV
         echo "WP_VERS=${{ github.event.inputs.wp_version || env.DEFAULT_WP_VERSION }}" >> $GITHUB_ENV
         echo "MARIADB_IMG=${{ github.event.inputs.maria_image || env.DEFAULT_MARIA_IMG }}" >> $GITHUB_ENV
-        echo MARIADB_IMG=$MARIADB_IMG
+        echo MARIADB_IMG=${{env.MARIADB_IMG}}
 
     - name: Set up Python ${{env.PY_VERS}}
       uses: actions/setup-python@v4
