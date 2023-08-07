@@ -25,7 +25,7 @@ on:
           - "3.9"
         default: "3.12.0-rc.1"
       maria_image:
-        description: Choose MariaDB docker tag (11.x isn't supported, yet)
+        description: MariaDB docker tag (10.x is fine, 11.x isn't)
         default: "10.8.3-jammy"
   schedule:
     - cron:  '0 0 * * FRI'
@@ -47,7 +47,7 @@ jobs:
         echo "PY_VERS=${{ github.event.inputs.python_version || env.DEFAULT_PY_VERSION }}" >> $GITHUB_ENV
         echo "WP_VERS=${{ github.event.inputs.wp_version || env.DEFAULT_WP_VERSION }}" >> $GITHUB_ENV
         echo "MARIADB_IMG=${{ github.event.inputs.maria_image || env.DEFAULT_MARIA_IMG }}" >> $GITHUB_ENV
-        echo $GITHUB_ENV
+        echo MARIADB_IMG=$MARIADB_IMG
 
     - name: Set up Python ${{env.PY_VERS}}
       uses: actions/setup-python@v4
